@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>THE SORT</title>
+
+<!-- Tesseract.js provides browser-based OCR. -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@7/dist/tesseract.min.js"></script>
+
+<style>
+    :root {
+        --green: #39ff14;
+        --green-soft: #19c90b;
+        --dark: #050505;
+        --panel: #0c0c0c;
+        --border: #1f4d1a;
+        --muted: #8c9a88;
+        --danger: #ff5c5c;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--dark);
+        color: var(--green);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .app {
+        width: min(760px, 100%);
+        margin: 0 auto;
+        padding: 28px 16px 50px;
+    }
+
+    header {
+        text-align: center;
+        padding: 18px 0 30px;
+    }
+
+    h1 {
+        margin: 0;
+        font-size: clamp(2.5rem, 12vw, 5rem);
+        letter-spacing: .08em;
+        line-height: 1;
+        text-shadow: 0 0 18px rgba(57,255,20,.18);
+    }
+
+    .tagline {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: .8rem;
+        letter-spacing: .14em;
+    }
+
+    .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        margin-top: 16px;
+        box-shadow: 0 0 30px rgba(0,0,0,.25);
+    }
+
+    .label {
+        display: block;
+        margin-bottom: 9px;
+        color: var(--green);
+        font-size: .86rem;
+        letter-spacing: .08em;
+    }
+
+    input, button {
+        font: inherit;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+        width: 100%;
+        min-height: 50px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #000;
+        color: var(--green);
+        padding: 12px 13px;
+        outline: none;
+        font-size: 1rem;
+    }
+
+    input:focus {
+        border-color: var(--green);
+        box-shadow: 0 0 0 2px rgba(57,255,20,.08);
+    }
+
+    input::placeholder {
+        color: #536052;
+    }
+
+    .student-row {
+        display: grid;
+        grid-template-columns: 1fr 130px;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .student-number {
+        color: var(--muted);
+        margin: 17px 0 -2px;
+        font-size: .78rem;
+    }
+
+    button {
+        min-height: 50px;
+        border: 1px solid var(--green);
+        border-radius: 10px;
+        background: #000;
+        color: var(--green);
+        padding: 12px 16px;
+        cursor: pointer;
+        font-weight: 700;
+        letter-spacing: .05em;
+        transition: .15s ease;
+    }
+
+    button:hover {
+        background: var(--green);
+        color: #000;
+    }
+
+    button:active {
+        transform: scale(.98);
+    }
+
+    button.secondary {
+        border-color: var(--border);
+        color: #b9c8b5;
+    }
+
+    button.danger {
+        border-color: #7a2727;
+        color: #ff7a7a;
+    }
+
+    .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .actions.single {
+        grid-template-columns: 1fr;
+    }
+
+    .scan-box {
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .scan-title {
+        font-size: 1rem;
+        margin-bottom: 6px;
+    }
+
+    .scan-help {
+        color: var(--muted);
+        font-size: .75rem;
+        line-height: 1.5;
+        margin: 0 0 14px;
+    }
+
+    #photoInput {
+        display: none;
+    }
+
+    .status {
+        display: none;
+        margin-top: 14px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--muted);
+        font-size: .78rem;
+        line-height: 1.5;
+    }
+
+    .status.show { display: block; }
+    .status.error {
+        border-color: #7a2727;
+        color: #ff8585;
+    }
+
+    .progress {
+        width: 100%;
+        height: 6px;
+        margin-top: 9px;
+        background: #171717;
+        border-radius: 99px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        width: 0%;
+        height: 100%;
+        background: var(--green);
+        transition: width .2s ease;
+    }
+
+    .results {
+        display: none;
+    }
+
+    .results.show {
+        display: block;
+    }
+
+    .result-row {
+        display: grid;
+        grid-template-columns: 48px 1fr 90px;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 0;
+        border-bottom: 1px solid #172316;
+    }
+
+    .result-rank {
+        color: var(--muted);
+        text-align: center;
+    }
+
+    .result-name {
+        overflow-wrap: anywhere;
+    }
+
+    .result-mark {
+        text-align: right;
+        font-weight: 800;
+    }
+
+    .copy-status {
+        text-align: center;
+        min-height: 20px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: .78rem;
+    }
+
+    .footer {
+        text-align: center;
+        color: #3f4a3d;
+        font-size: .7rem;
+        margin-top: 30px;
+    }
+
+    @media (max-width: 520px) {
+        .app { padding: 18px 12px 40px; }
+        .panel { padding: 14px; }
+        .student-row { grid-template-columns: 1fr 105px; }
+        .actions { grid-template-columns: 1fr; }
+        h1 { font-size: 3.2rem; }
+    }
+</style>
+</head>
+
+<body>
+<div class="app">
+    <header>
+        <h1>THE SORT</h1>
+        <p class="tagline">ENTER · SCAN · SORT · COPY</p>
+    </header>
+
+    <section class="panel">
+        <label class="label" for="studentCount">NUMBER OF STUDENTS</label>
+        <input id="studentCount" type="number" min="1" max="500" inputmode="numeric"
+               placeholder="e.g. 30">
+        <div class="actions">
+            <button id="createBtn">CREATE LIST</button>
+            <button id="clearBtn" class="secondary">CLEAR</button>
+        </div>
+        <div id="countStatus" class="status"></div>
+    </section>
+
+    <section id="inputPanel" class="panel" style="display:none;">
+        <div id="studentInputs"></div>
+
+        <div class="actions">
+            <button id="sortBtn">SORT</button>
+            <button id="scanBtn" class="secondary">SCAN SHEET</button>
+        </div>
+
+        <div class="scan-box" style="margin-top:14px;">
+            <div class="scan-title">CAMERA / PHOTO OCR</div>
+            <p class="scan-help">
+                Take a clear photo of a list where each line contains a name and its mark.
+                OCR is only a helper: check the detected entries before sorting.
+            </p>
+            <input id="photoInput" type="file" accept="image/*" capture="environment">
+        </div>
+
+        <div id="ocrStatus" class="status">
+            <div id="ocrText">Preparing scanner...</div>
+            <div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+        </div>
+    </section>
+
+    <section id="detectedPanel" class="panel" style="display:none;">
+        <label class="label">DETECTED ENTRIES — CHECK THESE</label>
+        <div id="detectedInputs"></div>
+        <div class="actions">
+            <button id="useDetectedBtn">USE DETECTED DATA</button>
+            <button id="cancelDetectedBtn" class="secondary">CANCEL</button>
+        </div>
+    </section>
+
+    <section id="resultsPanel" class="panel results">
+        <label class="label">RESULT</label>
+        <div id="results"></div>
+
+        <div class="actions single">
+            <button id="copyBtn">COPY RESULT</button>
+            <button id="sortAgainBtn" class="secondary">SORT AGAIN</button>
+        </div>
+        <div id="copyStatus" class="copy-status"></div>
+    </section>
+
+    <div class="footer">THE SORT</div>
+</div>
+
+<script>
+    const countInput = document.getElementById("studentCount");
+    const createBtn = document.getElementById("createBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const inputPanel = document.getElementById("inputPanel");
+    const studentInputs = document.getElementById("studentInputs");
+    const sortBtn = document.getElementById("sortBtn");
+    const scanBtn = document.getElementById("scanBtn");
+    const photoInput = document.getElementById("photoInput");
+    const ocrStatus = document.getElementById("ocrStatus");
+    const ocrText = document.getElementById("ocrText");
+    const progressBar = document.getElementById("progressBar");
+    const detectedPanel = document.getElementById("detectedPanel");
+    const detectedInputs = document.getElementById("detectedInputs");
+    const useDetectedBtn = document.getElementById("useDetectedBtn");
+    const cancelDetectedBtn = document.getElementById("cancelDetectedBtn");
+    const resultsPanel = document.getElementById("resultsPanel");
+    const results = document.getElementById("results");
+    const copyBtn = document.getElementById("copyBtn");
+    const copyStatus = document.getElementById("copyStatus");
+    const sortAgainBtn = document.getElementById("sortAgainBtn");
+
+    let lastSorted = [];
+
+    createBtn.addEventListener("click", createList);
+    clearBtn.addEventListener("click", clearAll);
+    sortBtn.addEventListener("click", sortStudents);
+    scanBtn.addEventListener("click", () => photoInput.click());
+    photoInput.addEventListener("change", handlePhoto);
+    useDetectedBtn.addEventListener("click", useDetectedData);
+    cancelDetectedBtn.addEventListener("click", () => {
+        detectedPanel.style.display = "none";
+    });
+    copyBtn.addEventListener("click", copyResult);
+    sortAgainBtn.addEventListener("click", sortStudents);
+
+    function createList() {
+        const total = Number(countInput.value);
+
+        if (!Number.isInteger(total) || total < 1 || total > 500) {
+            showStatus(
+                document.getElementById("countStatus"),
+                "Enter a whole number from 1 to 500.",
+                true
+            );
+            return;
+        }
+
+        studentInputs.innerHTML = "";
+
+        for (let i = 0; i < total; i++) {
+            const number = document.createElement("div");
+            number.className = "student-number";
+            number.textContent = `ENTRY ${i + 1}`;
+
+            const row = document.createElement("div");
+            row.className = "student-row";
+
+            const name = document.createElement("input");
+            name.type = "text";
+            name.className = "student-name";
+            name.placeholder = "Name";
+            name.autocomplete = "off";
+
+            const marks = document.createElement("input");
+            marks.type = "number";
+            marks.className = "student-marks";
+            marks.placeholder = "Marks";
+            marks.inputMode = "numeric";
+            marks.min = "0";
+
+            row.append(name, marks);
+            studentInputs.append(number, row);
+        }
+
+        inputPanel.style.display = "block";
+        resultsPanel.classList.remove("show");
+        detectedPanel.style.display = "none";
+        document.getElementById("countStatus").className = "status";
+
+        inputPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function getStudentsFromInputs() {
+        const names = [...document.querySelectorAll(".student-name")];
+        const marks = [...document.querySelectorAll(".student-marks")];
+
+        if (!names.length) {
+            alert("Create the list first.");
+            return null;
+        }
+
+        const students = [];
+
+        for (let i = 0; i < names.length; i++) {
+            const name = names[i].value.trim();
+            const markText = marks[i].value.trim();
+
+            if (!name) {
+                alert(`Please enter a name for entry ${i + 1}.`);
+                names[i].focus();
+                return null;
+            }
+
+            if (markText === "" || !Number.isFinite(Number(markText))) {
+                alert(`Please enter valid marks for ${name}.`);
+                marks[i].focus();
+                return null;
+            }
+
+            const mark = Number(markText);
+
+            if (mark < 0 || mark > 100) {
+                alert(`Marks for ${name} must be between 0 and 100.`);
+                marks[i].focus();
+                return null;
+            }
+
+            students.push({ name, marks: mark });
+        }
+
+        return students;
+    }
+
+    // Same basic bubble-sort idea as the user's C program:
+    // repeatedly compare neighbours and swap the complete record.
+    function sortStudents() {
+        const students = getStudentsFromInputs();
+        if (!students) return;
+
+        for (let j = 0; j < students.length; j++) {
+            for (let i = 1; i < students.length; i++) {
+                if (students[i - 1].marks < students[i].marks) {
+                    const temp = students[i - 1];
+                    students[i - 1] = students[i];
+                    students[i] = temp;
+                }
+            }
+        }
+
+        lastSorted = students;
+        renderResults(students);
+    }
+
+    function renderResults(students) {
+        results.innerHTML = "";
+
+        students.forEach((student, index) => {
+            const row = document.createElement("div");
+            row.className = "result-row";
+
+            const rank = document.createElement("div");
+            rank.className = "result-rank";
+            rank.textContent = `${index + 1}.`;
+
+            const name = document.createElement("div");
+            name.className = "result-name";
+            name.textContent = student.name;
+
+            const mark = document.createElement("div");
+            mark.className = "result-mark";
+            mark.textContent = student.marks;
+
+            row.append(rank, name, mark);
+            results.appendChild(row);
+        });
+
+        resultsPanel.classList.add("show");
+        copyStatus.textContent = "";
+        resultsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function resultText() {
+        return lastSorted
+            .map((student, index) => `${index + 1}. ${student.name} : ${student.marks}`)
+            .join("\n");
+    }
+
+    async function copyResult() {
+        if (!lastSorted.length) return;
+
+        const text = resultText();
+
+        try {
+            await navigator.clipboard.writeText(text);
+            copyStatus.textContent = "COPIED.";
+        } catch {
+            const area = document.createElement("textarea");
+            area.value = text;
+            document.body.appendChild(area);
+            area.select();
+            document.execCommand("copy");
+            area.remove();
+            copyStatus.textContent = "COPIED.";
+        }
+    }
+
+    async function handlePhoto(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        detectedPanel.style.display = "none";
+        ocrStatus.className = "status show";
+        ocrText.textContent = "Loading OCR engine...";
+        progressBar.style.width = "0%";
+
+        try {
+            const worker = await Tesseract.createWorker("eng", 1, {
+                logger: message => {
+                    if (message.status) {
+                        const pct = typeof message.progress === "number"
+                            ? Math.round(message.progress * 100)
+                            : 0;
+                        progressBar.style.width = `${pct}%`;
+                        ocrText.textContent =
+                            `${message.status}${pct ? " " + pct + "%" : ""}`;
+                    }
+                }
+            });
+
+            const result = await worker.recognize(file);
+            await worker.terminate();
+
+            const detected = parseOCR(result.data.text);
+
+            if (!detected.length) {
+                throw new Error(
+                    "No name + mark pairs were detected. Try a clearer, well-lit photo."
+                );
+            }
+
+            buildDetectedInputs(detected);
+            ocrStatus.className = "status";
+            detectedPanel.style.display = "block";
+            detectedPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+
+        } catch (error) {
+            ocrStatus.className = "status show error";
+            ocrText.textContent = error.message || "OCR failed. Try another photo.";
+        } finally {
+            photoInput.value = "";
+        }
+    }
+
+    /*
+      OCR parser:
+      It expects lines such as:
+        Rahul Shah 95
+        Amit 87
+      It takes the LAST number from each line as the mark and the
+      text before it as the name.
+    */
+    function parseOCR(text) {
+        const lines = text
+            .split(/\r?\n/)
+            .map(line => line.replace(/\s+/g, " ").trim())
+            .filter(Boolean);
+
+        const found = [];
+
+        for (const line of lines) {
+            const match = line.match(/^(.+?)\s+(\d{1,3})(?:\s*\/\s*\d{1,3})?\s*$/);
+
+            if (!match) continue;
+
+            let name = match[1]
+                .replace(/^[\d\W_]+/, "")
+                .replace(/\s+/g, " ")
+                .trim();
+
+            const marks = Number(match[2]);
+
+            if (!name || marks < 0 || marks > 100) continue;
+
+            // Avoid obvious OCR/header lines.
+            if (/^(name|student|marks|mark|score|total|roll|rank)$/i.test(name)) {
+                continue;
+            }
+
+            found.push({ name, marks });
+        }
+
+        // Remove exact duplicate pairs.
+        return found.filter((item, index, arr) =>
+            index === arr.findIndex(
+                x => x.name.toLowerCase() === item.name.toLowerCase()
+                    && x.marks === item.marks
+            )
+        ).slice(0, 500);
+    }
+
+    function buildDetectedInputs(students) {
+        detectedInputs.innerHTML = "";
+
+        students.forEach((student, index) => {
+            const number = document.createElement("div");
+            number.className = "student-number";
+            number.textContent = `DETECTED ${index + 1}`;
+
+            const row = document.createElement("div");
+            row.className = "student-row";
+
+            const name = document.createElement("input");
+            name.type = "text";
+            name.className = "detected-name";
+            name.value = student.name;
+
+            const marks = document.createElement("input");
+            marks.type = "number";
+            marks.className = "detected-marks";
+            marks.min = "0";
+            marks.max = "100";
+            marks.value = student.marks;
+
+            row.append(name, marks);
+            detectedInputs.append(number, row);
+        });
+    }
+
+    function useDetectedData() {
+        const names = [...document.querySelectorAll(".detected-name")];
+        const marks = [...document.querySelectorAll(".detected-marks")];
+
+        if (!names.length) return;
+
+        countInput.value = names.length;
+        createList();
+
+        const targetNames = [...document.querySelectorAll(".student-name")];
+        const targetMarks = [...document.querySelectorAll(".student-marks")];
+
+        names.forEach((input, i) => {
+            targetNames[i].value = input.value.trim();
+            targetMarks[i].value = marks[i].value;
+        });
+
+        detectedPanel.style.display = "none";
+        inputPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function clearAll() {
+        countInput.value = "";
+        studentInputs.innerHTML = "";
+        inputPanel.style.display = "none";
+        detectedPanel.style.display = "none";
+        resultsPanel.classList.remove("show");
+        ocrStatus.className = "status";
+        document.getElementById("countStatus").className = "status";
+        lastSorted = [];
+        copyStatus.textContent = "";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showStatus(element, message, error = false) {
+        element.textContent = message;
+        element.className = error ? "status show error" : "status show";
+    }
+</script>
+</body>
+</html>
