@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000000">
+<title>THE SORT</title>
+
+<style>
+    :root {
+        --green: #39ff14;
+        --dark: #050505;
+        --panel: #0c0c0c;
+        --border: #1f4d1a;
+        --muted: #8c9a88;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--dark);
+        color: var(--green);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .app {
+        width: min(760px, 100%);
+        margin: 0 auto;
+        padding: 28px 16px 50px;
+    }
+
+    header {
+        text-align: center;
+        padding: 18px 0 30px;
+    }
+
+    h1 {
+        margin: 0;
+        font-size: clamp(2.5rem, 12vw, 5rem);
+        letter-spacing: .08em;
+        line-height: 1;
+        text-shadow: 0 0 18px rgba(57,255,20,.18);
+    }
+
+    .tagline {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: .8rem;
+        letter-spacing: .14em;
+    }
+
+    .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        margin-top: 16px;
+    }
+
+    .label {
+        display: block;
+        margin-bottom: 9px;
+        color: var(--green);
+        font-size: .86rem;
+        letter-spacing: .08em;
+    }
+
+    input, button { font: inherit; }
+
+    input[type="text"],
+    input[type="number"] {
+        width: 100%;
+        min-height: 50px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #000;
+        color: var(--green);
+        padding: 12px 13px;
+        outline: none;
+        font-size: 1rem;
+    }
+
+    input:focus {
+        border-color: var(--green);
+        box-shadow: 0 0 0 2px rgba(57,255,20,.08);
+    }
+
+    input::placeholder { color: #536052; }
+
+    .field { margin-bottom: 16px; }
+
+    .student-row {
+        display: grid;
+        grid-template-columns: 1fr 130px;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .student-number {
+        color: var(--muted);
+        margin: 17px 0 -2px;
+        font-size: .78rem;
+    }
+
+    button {
+        min-height: 50px;
+        border: 1px solid var(--green);
+        border-radius: 10px;
+        background: #000;
+        color: var(--green);
+        padding: 12px 16px;
+        cursor: pointer;
+        font-weight: 700;
+        letter-spacing: .05em;
+        transition: .15s ease;
+    }
+
+    button:hover {
+        background: var(--green);
+        color: #000;
+    }
+
+    button:active { transform: scale(.98); }
+
+    button.secondary {
+        border-color: var(--border);
+        color: #b9c8b5;
+    }
+
+    .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .actions.single { grid-template-columns: 1fr; }
+
+    .scan-box {
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        margin-top: 14px;
+    }
+
+    .scan-title { font-size: 1rem; margin-bottom: 6px; }
+
+    .scan-help {
+        color: var(--muted);
+        font-size: .75rem;
+        line-height: 1.5;
+        margin: 0 0 14px;
+    }
+
+    #photoInput { display: none; }
+
+    .results { display: none; }
+
+    .results.show { display: block; }
+
+    .result-header {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 14px;
+        margin-bottom: 6px;
+    }
+
+    .result-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 20px;
+        color: #c7d2c4;
+        font-size: .85rem;
+        line-height: 1.6;
+    }
+
+    .result-meta strong { color: var(--green); }
+
+    .result-row {
+        display: grid;
+        grid-template-columns: 48px 1fr 90px;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 0;
+        border-bottom: 1px solid #172316;
+    }
+
+    .result-rank {
+        color: var(--muted);
+        text-align: center;
+    }
+
+    .result-name { overflow-wrap: anywhere; }
+
+    .result-mark {
+        text-align: right;
+        font-weight: 800;
+    }
+
+    .copy-status {
+        text-align: center;
+        min-height: 20px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: .78rem;
+    }
+
+    .footer {
+        text-align: center;
+        color: #3f4a3d;
+        font-size: .7rem;
+        margin-top: 30px;
+    }
+
+    @media (max-width: 520px) {
+        .app { padding: 18px 12px 40px; }
+        .panel { padding: 14px; }
+        .student-row { grid-template-columns: 1fr 105px; }
+        .actions { grid-template-columns: 1fr; }
+        .result-meta { grid-template-columns: 1fr; }
+        h1 { font-size: 3.2rem; }
+    }
+</style>
+</head>
+
+<body>
+<div class="app">
+    <header>
+        <h1>THE SORT</h1>
+        <p class="tagline">ENTER · SORT · COPY</p>
+    </header>
+
+    <section class="panel">
+        <div class="field">
+            <label class="label" for="dateInput">DATE</label>
+            <input id="dateInput" type="text" placeholder="e.g. 08/10/2026 or Monday">
+        </div>
+
+        <div class="field">
+            <label class="label" for="chInput">CH</label>
+            <input id="chInput" type="text" placeholder="e.g. Ch 5 or Electrostatics">
+        </div>
+
+        <div class="field">
+            <label class="label" for="maxMarksInput">M.M</label>
+            <input id="maxMarksInput" type="number" min="1" inputmode="numeric"
+                   placeholder="e.g. 100">
+        </div>
+
+        <div class="field">
+            <label class="label" for="studentCount">NUMBER OF STUDENTS</label>
+            <input id="studentCount" type="number" min="1" max="500" inputmode="numeric"
+                   placeholder="e.g. 30">
+        </div>
+
+        <div class="actions">
+            <button id="createBtn">CREATE LIST</button>
+            <button id="clearBtn" class="secondary">CLEAR</button>
+        </div>
+    </section>
+
+    <section id="inputPanel" class="panel" style="display:none;">
+        <div id="studentInputs"></div>
+
+        <div class="actions">
+            <button id="sortBtn">SORT</button>
+            <button id="scanBtn" class="secondary">SCAN SHEET</button>
+        </div>
+
+        <div class="scan-box">
+            <div class="scan-title">CAMERA / PHOTO</div>
+            <p class="scan-help">
+                Take a photo of a list where each line contains a name and its mark.
+                OCR can be connected here for automatic extraction.
+            </p>
+            <input id="photoInput" type="file" accept="image/*" capture="environment">
+        </div>
+    </section>
+
+    <section id="resultsPanel" class="panel results">
+        <label class="label">RESULT</label>
+
+        <div class="result-header">
+            <div class="result-meta">
+                <div><strong>DATE:</strong> <span id="resultDate"></span></div>
+                <div><strong>CH:</strong> <span id="resultCh"></span></div>
+                <div><strong>M.M:</strong> <span id="resultMaxMarks"></span></div>
+                <div><strong>STUDENTS:</strong> <span id="resultStudentCount"></span></div>
+            </div>
+        </div>
+
+        <div id="results"></div>
+
+        <div class="actions single">
+            <button id="copyBtn">COPY RESULT</button>
+            <button id="sortAgainBtn" class="secondary">SORT AGAIN</button>
+        </div>
+        <div id="copyStatus" class="copy-status"></div>
+    </section>
+
+    <div class="footer">THE SORT</div>
+</div>
+
+<script>
+    const dateInput = document.getElementById("dateInput");
+    const chInput = document.getElementById("chInput");
+    const maxMarksInput = document.getElementById("maxMarksInput");
+    const countInput = document.getElementById("studentCount");
+    const createBtn = document.getElementById("createBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const inputPanel = document.getElementById("inputPanel");
+    const studentInputs = document.getElementById("studentInputs");
+    const sortBtn = document.getElementById("sortBtn");
+    const scanBtn = document.getElementById("scanBtn");
+    const photoInput = document.getElementById("photoInput");
+    const resultsPanel = document.getElementById("resultsPanel");
+    const results = document.getElementById("results");
+    const copyBtn = document.getElementById("copyBtn");
+    const copyStatus = document.getElementById("copyStatus");
+    const sortAgainBtn = document.getElementById("sortAgainBtn");
+
+    let lastSorted = [];
+
+    createBtn.addEventListener("click", createList);
+    clearBtn.addEventListener("click", clearAll);
+    sortBtn.addEventListener("click", sortStudents);
+    scanBtn.addEventListener("click", () => photoInput.click());
+    copyBtn.addEventListener("click", copyResult);
+    sortAgainBtn.addEventListener("click", sortStudents);
+
+    // Kept from the first version: the scan control is ready for
+    // camera/photo input without changing the rest of the interface.
+    photoInput.addEventListener("change", function () {
+        if (this.files.length) {
+            alert("Photo received. OCR can be connected here to automatically extract names and marks.");
+        }
+        this.value = "";
+    });
+
+    function createList() {
+        const total = Number(countInput.value);
+        const maxMarks = Number(maxMarksInput.value);
+
+        if (!dateInput.value.trim()) {
+            alert("Please enter the date.");
+            dateInput.focus();
+            return;
+        }
+
+        if (!chInput.value.trim()) {
+            alert("Please enter CH.");
+            chInput.focus();
+            return;
+        }
+
+        if (!Number.isInteger(maxMarks) || maxMarks < 1) {
+            alert("Please enter valid maximum marks.");
+            maxMarksInput.focus();
+            return;
+        }
+
+        if (!Number.isInteger(total) || total < 1 || total > 500) {
+            alert("Enter a whole number from 1 to 500.");
+            countInput.focus();
+            return;
+        }
+
+        studentInputs.innerHTML = "";
+
+        for (let i = 0; i < total; i++) {
+            const number = document.createElement("div");
+            number.className = "student-number";
+            number.textContent = `ENTRY ${i + 1}`;
+
+            const row = document.createElement("div");
+            row.className = "student-row";
+
+            const name = document.createElement("input");
+            name.type = "text";
+            name.className = "student-name";
+            name.placeholder = "Name";
+            name.autocomplete = "off";
+
+            const marks = document.createElement("input");
+            marks.type = "text";
+            marks.className = "student-marks";
+            marks.placeholder = "Marks";
+            marks.inputMode = "numeric";
+            marks.pattern = "[0-9]*";
+
+            row.append(name, marks);
+            studentInputs.append(number, row);
+        }
+
+        inputPanel.style.display = "block";
+        resultsPanel.classList.remove("show");
+        inputPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function getStudentsFromInputs() {
+        const names = [...document.querySelectorAll(".student-name")];
+        const marks = [...document.querySelectorAll(".student-marks")];
+        const maxMarks = Number(maxMarksInput.value);
+
+        if (!names.length) {
+            alert("Create the list first.");
+            return null;
+        }
+
+        const students = [];
+
+        for (let i = 0; i < names.length; i++) {
+            const name = names[i].value.trim();
+            const markText = marks[i].value.trim();
+
+            if (!name) {
+                alert(`Please enter a name for entry ${i + 1}.`);
+                names[i].focus();
+                return null;
+            }
+
+            if (!/^\d+$/.test(markText)) {
+                alert(`Please enter valid marks for ${name}.`);
+                marks[i].focus();
+                return null;
+            }
+
+            const mark = Number(markText);
+
+            if (mark > maxMarks) {
+                alert(`Marks for ${name} must be between 0 and ${maxMarks}.`);
+                marks[i].focus();
+                return null;
+            }
+
+            // Keep the exact text the user entered.
+            // For example, "05" stays "05" when displayed/copied.
+            students.push({ name, marks: mark, marksText: markText });
+        }
+
+        return students;
+    }
+
+    // Same bubble-sort algorithm as the original C program:
+    // compare neighbours and swap the complete student record.
+    function sortStudents() {
+        const students = getStudentsFromInputs();
+        if (!students) return;
+
+        for (let j = 0; j < students.length; j++) {
+            for (let i = 1; i < students.length; i++) {
+                if (students[i - 1].marks < students[i].marks) {
+                    const temp = students[i - 1];
+                    students[i - 1] = students[i];
+                    students[i] = temp;
+                }
+            }
+        }
+
+        lastSorted = students;
+        renderResults(students);
+    }
+
+    function renderResults(students) {
+        results.innerHTML = "";
+
+        document.getElementById("resultDate").textContent = dateInput.value.trim();
+        document.getElementById("resultCh").textContent = chInput.value.trim();
+        document.getElementById("resultMaxMarks").textContent = maxMarksInput.value;
+        document.getElementById("resultStudentCount").textContent = students.length;
+
+        students.forEach((student, index) => {
+            const row = document.createElement("div");
+            row.className = "result-row";
+
+            const rank = document.createElement("div");
+            rank.className = "result-rank";
+            rank.textContent = `${index + 1}.`;
+
+            const name = document.createElement("div");
+            name.className = "result-name";
+            name.textContent = student.name;
+
+            const mark = document.createElement("div");
+            mark.className = "result-mark";
+            mark.textContent = student.marksText;
+
+            row.append(rank, name, mark);
+            results.appendChild(row);
+        });
+
+        resultsPanel.classList.add("show");
+        copyStatus.textContent = "";
+        resultsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function resultText() {
+        const lines = [
+            `DATE: ${dateInput.value.trim()}`,
+            `CH: ${chInput.value.trim()}`,
+            `M.M: ${maxMarksInput.value}`,
+            "",
+            ...lastSorted.map(
+                (student, index) => `${index + 1}. ${student.name} : ${student.marksText}`
+            )
+        ];
+
+        return lines.join("\n");
+    }
+
+    async function copyResult() {
+        if (!lastSorted.length) return;
+
+        const text = resultText();
+
+        try {
+            await navigator.clipboard.writeText(text);
+            copyStatus.textContent = "COPIED.";
+        } catch {
+            const area = document.createElement("textarea");
+            area.value = text;
+            document.body.appendChild(area);
+            area.select();
+            document.execCommand("copy");
+            area.remove();
+            copyStatus.textContent = "COPIED.";
+        }
+    }
+
+    function clearAll() {
+        dateInput.value = "";
+        chInput.value = "";
+        maxMarksInput.value = "";
+        countInput.value = "";
+        studentInputs.innerHTML = "";
+        inputPanel.style.display = "none";
+        resultsPanel.classList.remove("show");
+        lastSorted = [];
+        copyStatus.textContent = "";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+</script>
+</body>
+</html>
